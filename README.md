@@ -1,257 +1,593 @@
-# PH Healthcare System — Backend
+# Express + Prisma Project Starter
 
-REST API for a doctor-appointment platform: patients book consultations, doctors run them, admins manage the platform. This repo is the backend only.
+A clean and scalable starter template for building REST APIs with **Node.js, Express.js, TypeScript, Prisma ORM, and PostgreSQL**.
 
-**Stack:** Node.js · Express 5 · TypeScript · Prisma 7 · PostgreSQL · JWT auth
+This starter is designed to provide a solid foundation for backend projects with database integration, environment configuration, migrations, and a structured project architecture.
 
-## Where the project stands today
+---
 
-This is an early build, not the finished product. Right now the only working feature is authentication — a patient can register, log in, and fetch their own profile. Appointments, doctor schedules, payments, and everything else in [`Project Requirements.md`](./Project%20Requirements.md) is planned but not built yet.
+## 🚀 Tech Stack
 
-Treat this README as a description of what the code *actually does today*, including its rough edges. A few are called out directly in [Known limitations](#known-limitations) further down — read that section before assuming something is broken on your end.
+- **Node.js** — JavaScript runtime
+- **Express.js** — Web framework
+- **TypeScript** — Type-safe JavaScript
+- **Prisma** — ORM and database toolkit
+- **PostgreSQL** — Relational database
+- **dotenv** — Environment variable management
+- **ESLint** — Code linting
+- **Prettier** — Code formatting
 
-## Prerequisites
+---
 
-| Tool           | Version | Check with |
-| -------------- | ------- | ---------- |
-| **Node.js**    | 20+     | `node -v`  |
-| **PostgreSQL** | 14+     | `psql -V`  |
+## 📁 Project Structure
 
-Any package manager works (npm, pnpm, yarn, bun). The examples below use `npm`.
+```text
+express-prisma-starter/
+│
+├── prisma/
+│   ├── migrations/
+│   └── schema.prisma
+│
+├── src/
+│   ├── config/
+│   │   └── env.ts
+│   │
+│   ├── controllers/
+│   │
+│   ├── middlewares/
+│   │
+│   ├── routes/
+│   │
+│   ├── services/
+│   │
+│   ├── utils/
+│   │
+│   ├── app.ts
+│   └── server.ts
+│
+├── .env
+├── .env.example
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── README.md
+```
 
-## Getting started
+---
 
-**1. Install dependencies**
+## ⚙️ Prerequisites
+
+Make sure you have the following installed:
+
+- [Node.js](https://nodejs.org/) `>= 20`
+- npm
+- PostgreSQL
+- Git
+
+Check your versions:
+
+```bash
+node -v
+npm -v
+psql --version
+```
+
+---
+
+## 📥 Installation
+
+### 1. Clone the repository
+
+```bash
+git clone <YOUR_REPOSITORY_URL>
+```
+
+Move into the project directory:
+
+```bash
+cd express-prisma-starter
+```
+
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-**2. Set up your environment file**
+---
+
+## 🔐 Environment Variables
+
+Create a `.env` file in the root directory:
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and point `DATABASE_URL` at a Postgres database you can connect to:
+For Windows, you can simply create a `.env` file manually.
 
+Example:
+
+```env
+PORT=5000
+
+DATABASE_URL="postgresql://postgres:password@localhost:5432/my_database?schema=public"
+
+NODE_ENV=development
 ```
-DATABASE_URL="postgresql://YOUR_USERNAME:YOUR_PASSWORD@localhost:5432/ph_healthcare?schema=public"
+
+### `.env.example`
+
+```env
+PORT=5000
+
+DATABASE_URL="postgresql://postgres:password@localhost:5432/database_name?schema=public"
+
+NODE_ENV=development
 ```
 
-The database doesn't need to exist beforehand — `prisma migrate dev` creates it. The other variables in `.env.example` are fine to leave as-is for local development; see [Environment variables](#environment-variables) for what each one does.
+> Never commit your `.env` file to Git.
 
-**3. Generate the Prisma client**
+---
+
+## 🗄️ Prisma Setup
+
+Initialize Prisma if it has not already been initialized:
+
+```bash
+npx prisma init
+```
+
+Your Prisma schema will be located at:
+
+```text
+prisma/schema.prisma
+```
+
+Example:
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+---
+
+## 🔄 Database Migration
+
+After modifying `schema.prisma`, create a migration:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+Generate the Prisma Client:
 
 ```bash
 npx prisma generate
 ```
 
-Prisma writes a typed client into `src/generated/prisma`. That folder is git-ignored, so a fresh clone never has it, and almost every file under `src/` imports from it — skip this step and nothing compiles. Re-run it any time you change a file in `prisma/schema/`.
-
-**4. Run the migrations**
+For production migrations:
 
 ```bash
-npx prisma migrate dev
+npx prisma migrate deploy
 ```
 
-This creates the `user` and `patient` tables using the SQL already committed under `prisma/migrations/`.
+---
 
-**5. Start the server**
+## ▶️ Running the Project
+
+### Development
 
 ```bash
 npm run dev
 ```
 
-You should see:
+The server will start at:
 
-```
-Connected to the database successfully.
-Server is running on port 5000
+```text
+http://localhost:5000
 ```
 
-Confirm it's up:
+### Production
+
+Build the project:
 
 ```bash
-curl http://localhost:5000/
-# {"success":true,"message":"Welcome to PH Healthcare System Backend"}
+npm run build
 ```
 
-## Environment variables
-
-`src/app/config/index.ts` is the only place `process.env` is read — application code should import `config` from there rather than reaching for `process.env` directly.
-
-| Variable                  | What it's for                                                      |
-| -------------------------- | ------------------------------------------------------------------ |
-| `NODE_ENV`                 | `development` includes the raw error and stack trace in API error responses |
-| `PORT`                     | Port the HTTP server listens on                                    |
-| `DATABASE_URL`             | Postgres connection string, used by both Prisma and the app        |
-| `JWT_ACCESS_SECRET`        | Signing key for access tokens                                      |
-| `JWT_REFRESH_SECRET`       | Signing key for refresh tokens                                     |
-| `JWT_ACCESS_EXPIRES_IN`    | Access token lifetime (e.g. `15m`, `1d`)                            |
-| `JWT_REFRESH_EXPIRES_IN`   | Refresh token lifetime                                              |
-| `BCRYPT_SALT_ROUNDS`       | Read into config but not wired up yet — password hashing currently uses a hardcoded value (see below) |
-| `BACKEND_URL`              | Read into config but not used anywhere yet                          |
-| `FRONTEND_URL`             | Added to the CORS allowlist                                        |
-
-There's no validation on startup: if a variable is missing, `config` simply holds `undefined` for it, and the app boots anyway. The first sign of trouble is usually a runtime error the moment that value is actually used — for `JWT_ACCESS_SECRET`, that means the very first login or registration.
-
-Before deploying anywhere, replace the JWT secrets — the ones in `.env.example` are placeholders anyone can guess:
+Start the production server:
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+npm start
 ```
 
-## Project structure
+---
 
-```
-src/
-├── server.ts                       # connects to the DB, then starts listening
-├── app.ts                          # express app: cors, body parsing, routes, error handling
-├── generated/prisma/                # Prisma client — git-ignored, run `npx prisma generate`
-└── app/
-    ├── config/index.ts              # reads and exposes every environment variable
-    ├── lib/prisma.ts                # shared PrismaClient instance — always import this, don't `new` your own
-    ├── middleware/
-    │   ├── checkAuth.ts             # exports `auth(...roles)`, the JWT + role guard
-    │   ├── globalErrorHandler.ts    # turns thrown errors into JSON responses
-    │   └── notFound.ts              # catch-all for unmatched routes
-    ├── utils/
-    │   ├── catchAsync.ts            # wraps async route handlers so thrown errors reach the error handler
-    │   ├── jwt.ts                   # sign / verify helpers
-    │   └── sendResponse.ts          # the standard `{ success, statusCode, message, data }` envelope
-    └── module/
-        └── auth/                    # the one feature module that exists so far
-            ├── auth.route.ts
-            ├── auth.controller.ts
-            ├── auth.service.ts
-            └── auth.interface.ts
+## 📜 Available Scripts
 
-prisma/
-├── schema/
-│   ├── schema.prisma                # generator + datasource only
-│   ├── user.prisma
-│   ├── patient.prisma
-│   └── enums.prisma                 # Role, UserStatus, Gender
-└── migrations/                      # generated SQL, committed to git
+| Command                     | Description                            |
+| --------------------------- | -------------------------------------- |
+| `npm run dev`               | Start development server               |
+| `npm run build`             | Build TypeScript project               |
+| `npm start`                 | Start production server                |
+| `npm run lint`              | Run ESLint                             |
+| `npm run format`            | Format code with Prettier              |
+| `npx prisma generate`       | Generate Prisma Client                 |
+| `npx prisma migrate dev`    | Create and apply development migration |
+| `npx prisma migrate deploy` | Apply production migrations            |
+| `npx prisma studio`         | Open Prisma Studio                     |
+
+---
+
+## 🧑‍💻 Prisma Studio
+
+Prisma Studio provides a visual interface for viewing and managing your database.
+
+Run:
+
+```bash
+npx prisma studio
 ```
 
-Prisma's schema is split across multiple files, wired together by `prisma.config.ts` at the repo root. That file also loads `.env` so the Prisma CLI can see `DATABASE_URL`.
+Then open the URL shown in your terminal.
 
-**The data model:** a `User` has at most one `Patient` (1-to-1). Registering writes both rows in a single nested Prisma call. Deletes are meant to be soft — there's an `isDeleted` flag and a `deletedAt` timestamp on both models — but nothing in the codebase sets them yet; there's no delete endpoint at all right now.
+---
 
-## The API
+## 🌐 API Structure
 
-Base URL: `http://localhost:5000`
+A typical API can follow this structure:
 
-| Method | Path                          | Auth required | Body                         |
-| ------ | ----------------------------- | ------------- | ----------------------------- |
-| `GET`  | `/`                            | –             | health check                  |
-| `POST` | `/api/v1/auth/register`        | –             | `name`, `email`, `password`   |
-| `POST` | `/api/v1/auth/login`           | –             | `email`, `password`           |
-| `GET`  | `/api/v1/auth/me`              | yes           | –                              |
-| `POST` | `/api/v1/auth/refresh-token`   | –             | reads the `refreshToken` cookie |
+```text
+/api
+│
+├── /users
+│   ├── GET     /
+│   ├── GET     /:id
+│   ├── POST    /
+│   ├── PATCH   /:id
+│   └── DELETE  /:id
+│
+└── /auth
+    ├── POST    /register
+    └── POST    /login
+```
 
-Every response from `sendResponse` (i.e. everything except the root route) has this shape:
+---
+
+## 🧩 Example Prisma Client
+
+Create a reusable Prisma client:
+
+```typescript
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export default prisma;
+```
+
+Example service:
+
+```typescript
+import prisma from "../config/prisma";
+
+export const getUsers = async () => {
+  return await prisma.user.findMany();
+};
+```
+
+---
+
+## 🔌 Example Express Route
+
+```typescript
+import { Router } from "express";
+import { getUsers } from "../services/user.service";
+
+const router = Router();
+
+router.get("/", async (_req, res) => {
+  const users = await getUsers();
+
+  res.json({
+    success: true,
+    data: users,
+  });
+});
+
+export default router;
+```
+
+---
+
+## 🏗️ Recommended Architecture
+
+The project follows a simple layered architecture:
+
+```text
+Request
+   ↓
+Routes
+   ↓
+Controllers
+   ↓
+Services
+   ↓
+Prisma
+   ↓
+PostgreSQL
+```
+
+### Routes
+
+Responsible for defining API endpoints.
+
+### Controllers
+
+Handle HTTP requests and responses.
+
+### Services
+
+Contain business logic.
+
+### Prisma
+
+Handles database queries.
+
+### PostgreSQL
+
+Stores application data.
+
+---
+
+## 🛡️ Error Handling
+
+A centralized error-handling middleware is recommended:
+
+```text
+Request
+   ↓
+Route
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Error
+   ↓
+Global Error Middleware
+   ↓
+JSON Response
+```
+
+Example response:
 
 ```json
-{ "success": true, "statusCode": 200, "message": "...", "data": {} }
+{
+  "success": false,
+  "message": "User not found"
+}
 ```
 
-### Tokens: use the response body, not the cookies
+---
 
-`register` and `login` return `accessToken` and `refreshToken` two ways: in the JSON body, and as cookies. **Use the JSON body.** The cookies are set with `sameSite: "none"` but `secure: false` — that combination is invalid under the cookie spec, and modern browsers silently drop the cookie rather than send it. Grab `data.accessToken` from the response and send it yourself:
+## 📦 Adding a New Model
+
+Add your model to:
+
+```text
+prisma/schema.prisma
+```
+
+Example:
+
+```prisma
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+```
+
+Then create a migration:
 
 ```bash
-curl -X POST http://localhost:5000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test Patient","email":"patient@example.com","password":"password123"}'
-
-curl http://localhost:5000/api/v1/auth/me \
-  -H "Authorization: Bearer <accessToken from the response above>"
+npx prisma migrate dev --name add_product
 ```
 
-`Authorization` accepts either `Bearer <token>` or the raw token with no prefix.
+---
 
-## Roles and authentication
+## 🔍 Useful Prisma Commands
 
-Four roles exist in the schema — `SUPER_ADMIN`, `ADMIN`, `DOCTOR`, `PATIENT` — but **registration always creates a `PATIENT`.** `registerPatient` hardcodes `Role.PATIENT` and only reads `name`, `email`, and `password` out of the request body, so sending `"role": "ADMIN"` does nothing. There's no admin module and no seed script, so the other three roles aren't reachable through the API yet. To test them, register a normal user and change their `role` directly in the database with `npx prisma studio` (opens at `http://localhost:5555`) — then log in again, since the role is baked into the token at login time and an old token keeps the old role.
-
-`auth(...roles)`, exported from `checkAuth.ts`, is the route guard:
-
-```ts
-router.get('/me', auth(Role.ADMIN, Role.DOCTOR, Role.PATIENT, Role.SUPER_ADMIN), AuthController.getMe)
-```
-
-What it actually does, in order:
-
-1. Reads the token from the `accessToken` cookie, falling back to the `Authorization` header.
-2. Verifies the JWT signature.
-3. Checks the role **from the token payload** against the roles the route allows.
-4. Looks the user up in the database by matching `id`, `email`, `name`, *and* `role` all at once — if any of those four have changed since the token was issued, the lookup fails and the request is rejected, even though the account still exists.
-5. Rejects the request only if the user's `status` is exactly `BLOCKED`. It does **not** check `isDeleted` or a `DELETED` status, so a soft-deleted account can still authenticate as long as `status` wasn't also set to `BLOCKED`.
-
-## Known limitations
-
-Worth knowing before you spend time debugging what looks like your own mistake:
-
-- **Every error comes back as HTTP 500.** `globalErrorHandler` works out the "correct" status code internally but always sends the response with `500`, regardless. Read the `message` field, not the status code, to see what actually went wrong.
-- **No request validation.** Nothing checks that `email` looks like an email or that `password` meets any length requirement — Postgres and Prisma are the only things that will reject bad input, and usually not with a helpful message.
-- **`BCRYPT_SALT_ROUNDS` isn't used.** Password hashing in `auth.service.ts` calls `bcrypt.hash(password, 8)` with a hardcoded cost factor; the environment variable is read into `config` but nothing references it yet.
-- **No tests.** `npm test` is a placeholder.
-
-## Extending this starter
-
-New features go under `src/app/module/<name>/` as four files with strict responsibilities:
-
-| File                   | Responsibility                                                    |
-| ---------------------- | ------------------------------------------------------------------- |
-| `<name>.route.ts`      | Wires `auth(...roles)` to controller functions, exports `<Name>Routes` |
-| `<name>.controller.ts` | Reads `req.body` / `req.user`, calls the service, calls `sendResponse` |
-| `<name>.service.ts`    | All business logic and every Prisma call for the module              |
-| `<name>.interface.ts`  | The TypeScript types for the module's payloads                       |
-
-Then mount it in `app.ts` next to the existing line:
-
-```ts
-app.use('/api/v1/doctor', DoctorRoutes)
-```
-
-Two rules keep the module boundaries useful rather than decorative:
-
-- **Controllers never call Prisma directly**, and **services never touch `req` or `res`.** If a service needs to know who's calling it, pass it the small `{ userId, email, name, role }` shape, not the whole request.
-- **Never spread `req.body` straight into a Prisma `create`/`update`.** Destructure the exact fields you expect. With no validation layer in front of the API, that destructuring is the only thing stopping someone from sending `"role": "ADMIN"` in a request body and having it stick.
-
-## Scripts
+### Check Prisma schema
 
 ```bash
-npm run dev     # start the server with auto-reload (tsx watch) — use this while developing
-npm run build   # typecheck with tsc and emit to dist/
-npm run start   # run the server once, no watching
+npx prisma validate
 ```
 
-There's no `npm run generate` / `migrate` / `studio` wrapper — call Prisma's CLI directly:
+### Format Prisma schema
 
 ```bash
-npx prisma generate     # regenerate the client after editing prisma/schema/
-npx prisma migrate dev  # create + apply a migration
-npx prisma studio       # browser GUI for your data, at http://localhost:5555
+npx prisma format
 ```
 
-### A note on `npm run build`
+### Generate Prisma Client
 
-`npm run build` is useful for catching type errors, but its output isn't directly runnable with `node`. The codebase uses extensionless relative imports (`from './app'`), which `tsx` resolves fine but Node's native ESM loader doesn't — running `node dist/src/server.js` fails with `ERR_UNSUPPORTED_DIR_IMPORT`. That's why `npm run start` runs the TypeScript source through `tsx` rather than executing `dist/`.
+```bash
+npx prisma generate
+```
 
-## Troubleshooting
+### Create migration
 
-**`Cannot find module '.../src/generated/prisma/client'`**
-Run `npx prisma generate` — see step 3 of [Getting started](#getting-started).
+```bash
+npx prisma migrate dev --name migration_name
+```
 
-**`Can't reach database server` / `ECONNREFUSED`**
-Postgres isn't running, or `DATABASE_URL` points somewhere it can't reach. Confirm with `pg_isready -h localhost -p 5432`.
+### Reset development database
 
-**`P1010: User was denied access on the database`**
-The username or password in `DATABASE_URL` doesn't match a real role on your Postgres server. `psql -c '\du'` lists the roles that actually exist; `whoami` gives you your OS username, which is usually your local superuser with no password.
+```bash
+npx prisma migrate reset
+```
 
-**Login or register throws instead of returning a token**
-Check that `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` are actually set in your `.env` — `jsonwebtoken` throws if the signing secret is `undefined`, and this project doesn't validate environment variables on startup.
+> `migrate reset` deletes the development database data. Use it carefully.
+
+### Open Prisma Studio
+
+```bash
+npx prisma studio
+```
+
+---
+
+## 🧪 API Testing
+
+You can test the API using tools such as:
+
+- Postman
+- Insomnia
+- Bruno
+- REST Client
+- cURL
+
+Example:
+
+```bash
+curl http://localhost:5000/api/users
+```
+
+---
+
+## 🔒 Security Recommendations
+
+For production applications, consider adding:
+
+- Helmet
+- CORS configuration
+- Rate limiting
+- Request validation
+- Password hashing with bcrypt/Argon2
+- JWT or session-based authentication
+- Secure HTTP headers
+- Input sanitization
+- Proper error handling
+
+---
+
+## 🚀 Deployment
+
+Before deploying:
+
+```bash
+npm run build
+```
+
+Apply production database migrations:
+
+```bash
+npx prisma migrate deploy
+```
+
+Then start the application:
+
+```bash
+npm start
+```
+
+Make sure your production environment contains a valid:
+
+```env
+DATABASE_URL="..."
+```
+
+---
+
+## 📌 Development Workflow
+
+A typical development workflow:
+
+```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+
+# Update Prisma schema
+# prisma/schema.prisma
+
+# Create migration
+npx prisma migrate dev --name init
+
+# Start development server
+npm run dev
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository.
+2. Create a feature branch.
+
+```bash
+git checkout -b feature/my-feature
+```
+
+3. Make your changes.
+4. Run linting and tests.
+
+```bash
+npm run lint
+```
+
+5. Commit your changes.
+
+```bash
+git commit -m "feat: add new feature"
+```
+
+6. Push the branch.
+
+```bash
+git push origin feature/my-feature
+```
+
+7. Open a Pull Request.
+
+---
+
+## 📄 License
+
+This project is available under the **MIT License**.
+
+---
+
+## 👨‍💻 Author
+
+**Mahib Alam Khan**
+
+Computer Science & Engineering
+American International University-Bangladesh (AIUB)
+
+---
+
+⭐ If this starter helped you, consider giving the repository a star.
